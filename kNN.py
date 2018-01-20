@@ -38,6 +38,42 @@ def mse(predicted, targets):
     error_sum = tf.reduce_sum((predicted - targets) ** 2)
     size = tf.cast(tf.shape(predicted)[1], tf.float64)
     return error_sum / (2*size)
+    
+def kNN_class(test_point, in_features, targets, k):
+    distances = dis_euc(test_point, in_features)
+    (val, ind) = tf.nn.top_k(-distances,k) # find closest neighbours in training set
+    
+    candidates = tf.gather(tf.constant(targets),ind) # Find the classifications for these neighbours
+    length = tf.shape(candidates)[0]
+    class_list = []
+    count_list = []
+
+    # Count the frequency of nearest neighbours and put them into matrices
+    # which are reduced class list and count list
+    for i in range(0,length.eval()):
+        (temp_class, __, temp_count) = tf.unique_with_counts(candidates[i])
+        padding = tf.concat([tf.constant([0]), tf.constant([k]) - tf.shape(temp_class)],0)
+        class_list.append(tf.pad(temp_class,[padding]))
+        count_list.append(tf.pad(temp_count,[padding]))
+    
+    red_class_list = tf.stack(class_list)
+    red_count_list = tf.stack(count_list)
+    
+    # Create an iterator for each test_point
+    iterator = tf.cast(tf.linspace(0., length.eval() - 1., length.eval()), tf.int64)
+    iterator = tf.reshape(iterator,[length,1])
+
+    # Combine the iterator with the indices of the highest counts in the
+    # reduced count list (red_count_list)
+    count_loc = tf.concat([iterator, tf.reshape(tf.argmax(red_count_list,1),[length,1])],1)
+    
+    outputs = tf.gather_nd(red_class_list, count_loc)
+
+    return outputs
+
+def class_perf(results, targets): 
+    error = tf.count_nonzero(results - targets) / tf.cast(tf.shape(targets), tf.int64)
+    return tf.constant(1) - error
 
 ##a = tf.constant([[1,1],[2,2],[3,3],[4,4]], name='a')
 #a = tf.constant([[1,1], [2,2]])

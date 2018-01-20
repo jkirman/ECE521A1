@@ -8,7 +8,7 @@ Created on Thu Jan 18 19:57:54 2018
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import kNN_class
+import kNN
 
 def data_segmentation(data_path, target_path, task):
 # task = 0 >> select the name ID targets for face recognition task
@@ -45,7 +45,13 @@ sess.run(init)
 
 (trainData, validData, testData, trainTarget, validTarget, testTarget) = data_segmentation("data.npy", "target.npy", 0)
 
-classes = kNN_class.kNN_class(testData, trainData, trainTarget, 10)
+k = [1,5,10,25,50,100,200]
+
+val_perf = np.zeros(7)
+for i in range(0,7):
+    classes = kNN.kNN_class(validData, trainData, trainTarget, k[i])
+    val_perf[i] = kNN.class_perf(classes, validTarget).eval()
+
 
 #plt.imshow(form_picture(trainData,0), cmap="gray")
 #plt.show()
